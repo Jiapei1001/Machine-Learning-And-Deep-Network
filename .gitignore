@@ -1,4 +1,5 @@
-./MINIST
+MINIST/
 
-./src/data
-./src/files
+src/data/
+src/files/
+src/digit.jpg
