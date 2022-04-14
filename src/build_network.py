@@ -20,7 +20,6 @@ batch_size_test = 1000
 learning_rate = 0.01
 momentum = 0.5
 log_interval = 10
-network_model_location = 'network/model.pt'
 
 # settings: random seed
 random_seed = 37
@@ -90,13 +89,11 @@ optimizer = optim.SGD(network.parameters(),
 train_losses = []
 train_counter = []
 test_losses = []
-test_counter = [i*len(train_loader.dataset) for i in range(n_epochs + 1)]
+test_counter = [i * len(train_loader.dataset) for i in range(n_epochs + 1)]
 
 
+# Train - entry function to train the network model
 def train(epoch):
-    '''
-    Train - entry function to train the network model
-    '''
     network.train()
 
     for batch_idx, (data, target) in enumerate(train_loader):
@@ -113,13 +110,11 @@ def train(epoch):
 
             train_losses.append(loss.item())
             train_counter.append(
-                (batch_idx*64) + ((epoch-1)*len(train_loader.dataset)))
+                (batch_idx * 64) + ((epoch - 1) * len(train_loader.dataset)))
 
 
+# evaluation of the training model
 def test():
-    '''
-    evaluation of the training model
-    '''
     network.eval()
     test_loss = 0
     correct = 0
@@ -158,11 +153,11 @@ fig
 
 
 # Step E. Save the network to a file
-torch.save(network.state_dict(), network_model_location)
+torch.save(network.state_dict(), network_model.network_model_location)
 
 
 # Step F. Read the network and run it on the test set
-loaded_model_weights = torch.load(network_model_location)
+loaded_model_weights = torch.load(network_model.network_model_location)
 # Evaluation mode
 # In training mode the dropout layer randomly sets node values to zero.
 # In evaluation mode, it multiplies each value by 1-dropout rate so the same pattern will generate the same output each time.

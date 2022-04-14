@@ -15,13 +15,11 @@ import cv2
 
 import network_model
 
-# parameters
-network_model_location = 'network/model.pt'
 
-# entry function for analyzing the network model
+# entry function for analyzing the network model.
 def main(argv):
     # load in network model
-    loaded_model_weights = torch.load(network_model_location)
+    loaded_model_weights = torch.load(network_model.network_model_location)
     network = network_model.Network()
     network.eval()
     network.load_state_dict(loaded_model_weights)
@@ -72,7 +70,7 @@ def main(argv):
     # Analyze C - Show effects after a truncated network
     # Weights of the model are still the same,
     # but only the first two layers will be used if you apply the model to some data.
-    loaded_model_weights = torch.load(network_model_location)
+    loaded_model_weights = torch.load(network_model.network_model_location)
     truncated_network_1 = network_model.TruncatedNetworkOne()
     truncated_network_1.eval()
     truncated_network_1.load_state_dict(loaded_model_weights)
@@ -93,6 +91,7 @@ def main(argv):
         plt.show(block=False)
         fig
 
+    # 2 convolution layers
     truncated_network_2 = network_model.TruncatedNetworkTwo()
     truncated_network_2.eval()
     truncated_network_2.load_state_dict(loaded_model_weights)
