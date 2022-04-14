@@ -4,3 +4,4 @@ src/data/
 src/files/
 src/network/
 src/digit.jpg
+src/__pycache__

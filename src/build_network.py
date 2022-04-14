@@ -10,6 +10,9 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 
+import network_model
+
+
 # initial training parameters
 n_epochs = 3
 batch_size_train = 64
@@ -50,45 +53,6 @@ def loadMNIST() -> torch.utils.data.DataLoader:
     return train_loader, test_loader, mnist_train_set, mnist_test_set
 
 
-# Network model class
-class Network(nn.Module):
-    # constructing Network using torch.nn
-    # Reference: https://pytorch.org/docs/stable/generated/torch.nn.Conv2d.html
-    # Visualization: https://github.com/vdumoulin/conv_arithmetic/blob/master/README.md
-    def __init__(self) -> None:
-        super(Network, self).__init__()
-        # A convolution layer with in_channels, out_channels, and kernel_size
-        self.conv1 = nn.Conv2d(1, 10, kernel_size=5)
-        # A max pooling layer with a 2x2 window and a ReLU function applied.
-        self.conv2 = nn.Conv2d(10, 20, kernel_size=5)
-        # 50%
-        self.conv2_drop = nn.Dropout2d(0.5)
-        self.fc1 = nn.Linear(320, 50)
-        self.fc2 = nn.Linear(50, 10)
-
-    def forward(self, x) -> torch.Tensor:
-        # A convolution layer with 10 5x5 filters
-        x = self.conv1(x)
-        # A max pooling layer with a 2x2 window and a ReLU function applied.
-        x = F.max_pool2d(x, 2)
-        x = F.relu(x)
-        # A convolution layer with 20 5x5 filters
-        x = self.conv2(x)
-        # A dropout layer with a 0.5 dropout rate (50%)
-        x = self.conv2_drop(x)
-        # A max pooling layer with a 2x2 window and a ReLU function applied
-        x = F.max_pool2d(x, 2)
-        x = F.relu(x)
-        # A flattening operation followed by a fully connected Linear layer with 50 nodes and a ReLU function on the output
-        x = torch.flatten(x, 1)
-        x = self.fc1(x)
-        x = F.relu(x)
-        # A final fully connected Linear layer with 10 nodes and the log_softmax function applied to the output.
-        x = self.fc2(x)
-        output = F.log_softmax(x, dim=1)
-        return output
-
-
 # Step A. Get the MNIST digit data set
 train_loader, test_loader, mnist_train_set, mnist_test_set = loadMNIST()
 
@@ -118,7 +82,7 @@ fig
 # Step B. Settings to make the network repeatable
 
 # Step C. Build the network model
-network = Network()
+network = network_model.Network()
 optimizer = optim.SGD(network.parameters(),
                       lr=learning_rate, momentum=momentum)
 
@@ -128,10 +92,11 @@ train_counter = []
 test_losses = []
 test_counter = [i*len(train_loader.dataset) for i in range(n_epochs + 1)]
 
-# entry function to train the network model
-
 
 def train(epoch):
+    '''
+    Train - entry function to train the network model
+    '''
     network.train()
 
     for batch_idx, (data, target) in enumerate(train_loader):
@@ -150,10 +115,11 @@ def train(epoch):
             train_counter.append(
                 (batch_idx*64) + ((epoch-1)*len(train_loader.dataset)))
 
-# evaluation of the training model
-
 
 def test():
+    '''
+    evaluation of the training model
+    '''
     network.eval()
     test_loss = 0
     correct = 0
@@ -196,7 +162,7 @@ torch.save(network.state_dict(), network_model_location)
 
 
 # Step F. Read the network and run it on the test set
-loaded_network = torch.load(network_model_location)
+loaded_model_weights = torch.load(network_model_location)
 # Evaluation mode
 # In training mode the dropout layer randomly sets node values to zero.
 # In evaluation mode, it multiplies each value by 1-dropout rate so the same pattern will generate the same output each time.
