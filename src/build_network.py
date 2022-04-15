@@ -10,8 +10,9 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 
-import network_model
+import sys
 
+import network_model
 
 # initial training parameters
 n_epochs = 3
@@ -27,11 +28,9 @@ torch.manual_seed(random_seed)
 # settings: turn off CUDA to make the process repeatable
 torch.backends.cudnn.enabled = False
 
-
 # load MINIST data
 def loadMNIST() -> torch.utils.data.DataLoader:
     transform = torchvision.transforms.Compose(
-
         [
             torchvision.transforms.ToTensor(),
             torchvision.transforms.Normalize(
@@ -51,49 +50,8 @@ def loadMNIST() -> torch.utils.data.DataLoader:
 
     return train_loader, test_loader, mnist_train_set, mnist_test_set
 
-
-# Step A. Get the MNIST digit data set
-train_loader, test_loader, mnist_train_set, mnist_test_set = loadMNIST()
-
-# look at a batch of train data
-training_examples = enumerate(train_loader)
-batch_idx, (training_examples_data, training_examples_targets) = next(
-    training_examples)
-
-print(training_examples_data.shape)
-
-# plot 6 images
-fig = plt.figure()
-for i in range(6):
-    plt.subplot(2, 3, i + 1)
-    plt.tight_layout()
-    plt.imshow(training_examples_data[i][0],
-               cmap='viridis', interpolation='none')
-    plt.title("Data Label: {}".format(training_examples_targets[i]))
-    plt.xticks([])
-    plt.yticks([])
-
-# don't block following computation process
-plt.show(block=False)
-fig
-
-
-# Step B. Settings to make the network repeatable
-
-# Step C. Build the network model
-network = network_model.Network()
-optimizer = optim.SGD(network.parameters(),
-                      lr=learning_rate, momentum=momentum)
-
-# Step D. Train the model
-train_losses = []
-train_counter = []
-test_losses = []
-test_counter = [i * len(train_loader.dataset) for i in range(n_epochs + 1)]
-
-
 # Train - entry function to train the network model
-def train(epoch):
+def train(epoch, network, train_loader, optimizer, train_losses, train_counter):
     network.train()
 
     for batch_idx, (data, target) in enumerate(train_loader):
@@ -114,7 +72,7 @@ def train(epoch):
 
 
 # evaluation of the training model
-def test():
+def test(network, test_loader, test_losses):
     network.eval()
     test_loss = 0
     correct = 0
@@ -134,24 +92,66 @@ def test():
             100. * correct / len(test_loader.dataset)))
 
 
-# entry to Train
-test()
-for epoch in range(1, n_epochs + 1):
-    train(epoch=epoch)
-    test()
+# entry function to start the program
+def main(argv):
+    # Step A. Get the MNIST digit data set
+    train_loader, test_loader, mnist_train_set, mnist_test_set = loadMNIST()
+
+    # look at a batch of train data
+    training_examples = enumerate(train_loader)
+    batch_idx, (training_examples_data, training_examples_targets) = next(
+        training_examples)
+
+    print(training_examples_data.shape)
+
+    # plot 6 images
+    fig = plt.figure()
+    for i in range(6):
+        plt.subplot(2, 3, i + 1)
+        plt.tight_layout()
+        plt.imshow(training_examples_data[i][0],
+                   cmap='viridis', interpolation='none')
+        plt.title("Data Label: {}".format(training_examples_targets[i]))
+        plt.xticks([])
+        plt.yticks([])
+
+    # don't block following computation process
+    plt.show(block=False)
+    fig
+
+    # Step B. Settings to make the network repeatable
+
+    # Step C. Build the network model
+    network = network_model.Network()
+    optimizer = optim.SGD(network.parameters(),
+                          lr=learning_rate, momentum=momentum)
+
+    # Step D. Train the model
+    train_losses = []
+    train_counter = []
+    test_losses = []
+    test_counter = [i * len(train_loader.dataset) for i in range(n_epochs + 1)]
+
+    # entry to Train
+    test(network, test_loader, test_losses)
+    for epoch in range(1, n_epochs + 1):
+        train(epoch, network, train_loader,
+              optimizer, train_losses, train_counter)
+        test(network, test_loader, test_losses)
+
+    # plot the training and testing accuracy
+    fig = plt.figure()
+    plt.plot(train_counter, train_losses, color='blue')
+    plt.scatter(test_counter, test_losses, color='red')
+    plt.legend(['Train Loss', 'Test Loss'], loc='upper right')
+    plt.xlabel('number of training examples seen')
+    plt.ylabel('negative log likelihood loss')
+    plt.show()
+    fig
+
+    # Step E. Save the network to a file
+    torch.save(network.state_dict(), network_model.network_model_location)
 
 
-# plot the training and testing accuracy
-fig = plt.figure()
-plt.plot(train_counter, train_losses, color='blue')
-plt.scatter(test_counter, test_losses, color='red')
-plt.legend(['Train Loss', 'Test Loss'], loc='upper right')
-plt.xlabel('number of training examples seen')
-plt.ylabel('negative log likelihood loss')
-plt.show(block=False)
-fig
-
-
-# Step E. Save the network to a file
-torch.save(network.state_dict(), network_model.network_model_location)
-
+if __name__ == "__main__":
+    main(sys.argv)
