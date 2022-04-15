@@ -155,30 +155,3 @@ fig
 # Step E. Save the network to a file
 torch.save(network.state_dict(), network_model.network_model_location)
 
-
-# Step F. Read the network and run it on the test set
-loaded_model_weights = torch.load(network_model.network_model_location)
-# Evaluation mode
-# In training mode the dropout layer randomly sets node values to zero.
-# In evaluation mode, it multiplies each value by 1-dropout rate so the same pattern will generate the same output each time.
-network.eval()
-# reshape to 10 images, each 1 channel, size as 28 * 28
-eval_in = mnist_test_set.data[2:12].reshape(10, 1, 28, 28).float()
-eval_res = network(eval_in)
-predictions = torch.argmax(eval_res, dim=1)
-
-
-# plot 10 images
-fig = plt.figure()
-for i in range(9):
-    plt.subplot(3, 3, i + 1)
-    plt.tight_layout()
-    plt.imshow(mnist_test_set.data[i + 2],
-               cmap='viridis', interpolation='none')
-    plt.title("Label: {}, Prediction: {}".format(
-        mnist_test_set.targets[i + 2], predictions[i]))
-    plt.xticks([])
-    plt.yticks([])
-
-plt.show()
-fig
