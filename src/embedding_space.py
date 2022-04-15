@@ -24,12 +24,45 @@ import network_model
 greek_symbols_path = '../greek_symbols'
 greek_symbols_csv = '../greek_symbols/greek_symbols.csv'
 greek_symbols_category_csv = '../greek_symbols/greek_symbols_category.csv'
+handwritten_greek_symbols_path = '../handwritten_greek_symbols'
 
 # greek symbols data
 imgs, labels = [], []
 valid_images = [".jpg", ".gif", ".png", ".tga"]
 
 embedding_spaces = []
+
+
+# helper function to load images from a file path
+def loadHandwrittenSymbols(path):
+    imgs = []
+    processed_imgs = []
+    labels = []
+    # Reference - https://stackoverflow.com/questions/26392336/importing-images-from-a-directory-python-to-list-or-dictionary
+    for f in os.listdir(path):
+        ext = os.path.splitext(f)[1]
+        if ext.lower() not in valid_images:
+            continue
+
+        i = cv2.imread(path + '/' + f)
+        # gray
+        i = cv2.cvtColor(i, cv2.COLOR_BGR2GRAY)
+        imgs.append(i)
+
+        (thresh, blackAndWhiteImage) = cv2.threshold(
+            i, 80, 255, cv2.THRESH_BINARY)
+
+        # scale down to 28x28
+        blackAndWhiteImage = cv2.resize(blackAndWhiteImage, (28, 28))
+        # invert image intensities
+        # blackAndWhiteImage = cv2.bitwise_not(blackAndWhiteImage)
+
+        l = f.split('.')[0]
+
+        processed_imgs.append(blackAndWhiteImage)
+        labels.append(l)
+
+    return imgs, processed_imgs, labels
 
 # helper function to load images from a file path
 def loadSymbols(path):
@@ -41,14 +74,21 @@ def loadSymbols(path):
 
         i = cv2.imread(path + '/' + f)
         # scale down to 28x28
-        i = cv2.resize(i, (28, 28))
+        # i = cv2.resize(i, (28, 28))
         # gray
         i = cv2.cvtColor(i, cv2.COLOR_BGR2GRAY)
         # invert image intensities
         i = cv2.bitwise_not(i)
+
+        (thresh, blackAndWhiteImage) = cv2.threshold(
+            i, 52, 255, cv2.THRESH_BINARY)
+
+        # scale down to 28x28
+        blackAndWhiteImage = cv2.resize(blackAndWhiteImage, (28, 28))
+
         l = f.split('_')[0]
 
-        imgs.append(i)
+        imgs.append(blackAndWhiteImage)
         labels.append(l)
 
 # write mat to csv
@@ -84,7 +124,7 @@ def main(argv):
     # load greek symbols
     loadSymbols(greek_symbols_path)
     writeOutToCSV()
-    
+
     # load network weights to truncated network model
     loaded_model_weights = torch.load(network_model.network_model_location)
     truncated_network = network_model.TruncatedNetworkThree()
@@ -113,11 +153,51 @@ def main(argv):
         alpha_dist = squareSumDist(alpha, features)
         beta_dist = squareSumDist(beta, features)
         gamma_dist = squareSumDist(gamma, features)
-        
+
         print('Index: {},\t Label: {},\t Alpha Dist: {:.2f},\t Beta Dist: {:.2f},\t Gamma Dist: {:.2f}'.format(
             i, r['label'], alpha_dist, beta_dist, gamma_dist))
-    
-    return
+
+    # load handwritten greek symbols
+    original_imgs, hw_imgs, hw_labels = loadHandwrittenSymbols(
+        handwritten_greek_symbols_path)
+
+    # load into truncated model
+    with torch.no_grad():
+        fig = plt.figure()
+        # predicted images
+        for i in range(len(hw_imgs)):
+            plt.subplot(2, 3, i + 1)
+            plt.tight_layout()
+
+            embed = truncated_network(torch.tensor(
+                hw_imgs[i].reshape(1, 1, 28, 28), dtype=torch.float32)).detach().numpy().flatten()
+
+            min_dist = sys.maxsize
+            prediction = ''
+            for _, r in df.iterrows():
+                features = r.embedding.flatten()
+                a = squareSumDist(embed, features)
+                if (a < min_dist):
+                    min_dist = a
+                    prediction = r.label
+
+            plt.imshow(hw_imgs[i])
+            plt.title("Label: {}, Prediction: {}".format(
+                hw_labels[i], prediction))
+            plt.xticks([])
+            plt.yticks([])
+
+        # original images
+        for i in range(3, 6):
+            plt.subplot(2, 3, i + 1)
+            plt.tight_layout()
+            plt.imshow(original_imgs[i - 3], cmap='Greys')
+            plt.xticks([])
+            plt.yticks([])
+
+        plt.show()
+        fig
+
 
 if __name__ == "__main__":
     main(sys.argv)
