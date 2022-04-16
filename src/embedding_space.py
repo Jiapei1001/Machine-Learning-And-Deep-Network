@@ -154,7 +154,7 @@ def main(argv):
         beta_dist = squareSumDist(beta, features)
         gamma_dist = squareSumDist(gamma, features)
 
-        print('Index: {},\t Label: {},\t Alpha Dist: {:.2f},\t Beta Dist: {:.2f},\t Gamma Dist: {:.2f}'.format(
+        print('Index: {},\t Label: {},\t Alpha Dist: {:.2f},\t\t Beta Dist: {:.2f},\t\t Gamma Dist: {:.2f}'.format(
             i, r['label'], alpha_dist, beta_dist, gamma_dist))
 
     # load handwritten greek symbols
